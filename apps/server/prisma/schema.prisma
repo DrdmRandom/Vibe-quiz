@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  quizzes      Quiz[]
+  sessions     LiveSession[]
+}
+
+model Quiz {
+  id          String     @id @default(uuid())
+  ownerId     String
+  owner       User       @relation(fields: [ownerId], references: [id])
+  title       String
+  description String?
+  isPublished Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[]
+  sessions    LiveSession[]
+}
+
+model Question {
+  id          String    @id @default(uuid())
+  quizId      String
+  quiz        Quiz      @relation(fields: [quizId], references: [id])
+  text        String
+  durationSec Int
+  order       Int
+  choices     Choice[]
+  answers     LiveAnswer[]
+}
+
+model Choice {
+  id         String    @id @default(uuid())
+  questionId String
+  question   Question  @relation(fields: [questionId], references: [id])
+  text       String
+  isCorrect  Boolean
+  answers    LiveAnswer[]
+}
+
+enum SessionStatus {
+  LOBBY
+  RUNNING
+  REVEAL
+  ENDED
+}
+
+model LiveSession {
+  id                    String        @id @default(uuid())
+  quizId                String
+  hostUserId            String
+  quiz                  Quiz          @relation(fields: [quizId], references: [id])
+  host                  User          @relation(fields: [hostUserId], references: [id])
+  pin                   String        @unique
+  status                SessionStatus @default(LOBBY)
+  currentQuestionIndex  Int           @default(0)
+  startedAt             DateTime?
+  endedAt               DateTime?
+  createdAt             DateTime      @default(now())
+  players               LivePlayer[]
+  answers               LiveAnswer[]
+  events                LiveEventLog[]
+}
+
+model LivePlayer {
+  id             String      @id @default(uuid())
+  sessionId      String
+  session        LiveSession @relation(fields: [sessionId], references: [id])
+  nickname       String
+  joinAt         DateTime    @default(now())
+  reconnectToken String      @default(uuid())
+  lastSeenAt     DateTime    @default(now())
+  isConnected    Boolean     @default(true)
+  totalPoints    Int         @default(0)
+  currentStreak  Int         @default(0)
+  avgAnswerMs    Int         @default(0)
+  answers        LiveAnswer[]
+
+  @@unique([sessionId, nickname])
+}
+
+model LiveAnswer {
+  id         String      @id @default(uuid())
+  sessionId  String
+  session    LiveSession @relation(fields: [sessionId], references: [id])
+  playerId   String
+  player     LivePlayer  @relation(fields: [playerId], references: [id])
+  questionId String
+  question   Question    @relation(fields: [questionId], references: [id])
+  choiceId   String
+  choice     Choice      @relation(fields: [choiceId], references: [id])
+  isCorrect  Boolean
+  answeredAt DateTime    @default(now())
+  answerMs   Int
+  awardedPoints Int
+}
+
+model LiveEventLog {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   LiveSession @relation(fields: [sessionId], references: [id])
+  type      String
+  payload   Json
+  createdAt DateTime    @default(now())
+}
