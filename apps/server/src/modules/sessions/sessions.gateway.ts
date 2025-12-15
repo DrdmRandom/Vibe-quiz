@@ -22,7 +22,8 @@ export class SessionsGateway implements OnGatewayConnection {
     const decoded: any = token ? this.jwt.verify(token, { secret: this.config.get<string>('JWT_SECRET', 'changeme') }) : null;
     if (!decoded?.sub) throw new Error('Unauthorized');
     const res = await this.sessions.createSession(decoded.sub, body.quizId);
-    client.emit('session:lobbyState', { pin: res.pin, players: [] });
+    client.join(res.pin);
+    this.server.to(res.pin).emit('session:lobbyState', { pin: res.pin, players: [] });
   }
 
   @SubscribeMessage('player:join')
