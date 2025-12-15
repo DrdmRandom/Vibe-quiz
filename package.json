@@ -1,0 +1,14 @@
+{
+  "name": "vibe-quiz-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n server,web -c green,cyan \"pnpm --filter @vibequiz/server dev\" \"pnpm --filter @vibequiz/web dev\"",
+    "db:migrate": "pnpm --filter @vibequiz/server prisma migrate dev --name init",
+    "db:seed": "pnpm --filter @vibequiz/server prisma db seed",
+    "test": "pnpm --filter @vibequiz/server test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
